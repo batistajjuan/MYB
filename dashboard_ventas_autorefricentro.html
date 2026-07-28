@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoRefricentro — Dashboard Ventas 2025 vs 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+#gate{position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center}
+.gate-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px 48px;text-align:center;width:340px}
+.gate-logo{font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
+.gate-sub{font-size:12px;color:#64748b;margin-bottom:28px}
+.gate-box label{display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;text-align:left}
+.gate-box input{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:15px;padding:10px 14px;letter-spacing:2px;outline:none;transition:.2s}
+.gate-box input:focus{border-color:#6366f1}
+.gate-btn{margin-top:16px;width:100%;background:#6366f1;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;padding:11px;cursor:pointer;transition:.15s}
+.gate-btn:hover{background:#4f46e5}
+.gate-err{margin-top:10px;font-size:12px;color:#f43f5e;min-height:16px}
+</style>
+<script>
+(function(){
+  const HASH='3d2f54a8e1c97b06f4d8a2e5c3b1f7d9a4e6c2b8f5d1a3e7c9b2d4f6a8e0c1b'; // placeholder, checked inline
+  document.addEventListener('DOMContentLoaded',function(){
+    const gate=document.getElementById('gate');
+    const inp=document.getElementById('gate-inp');
+    const err=document.getElementById('gate-err');
+    // Check sessionStorage so users don't re-enter on refresh
+    if(sessionStorage.getItem('arc_auth')==='1'){gate.remove();return;}
+    document.getElementById('gate-form').addEventListener('submit',function(e){
+      e.preventDefault();
+      if(inp.value==='Myb2026'){
+        sessionStorage.setItem('arc_auth','1');
+        gate.style.opacity='0';gate.style.transition='opacity .4s';
+        setTimeout(()=>gate.remove(),400);
+      } else {
+        err.textContent='Contraseña incorrecta. Intente de nuevo.';
+        inp.value='';inp.focus();
+        inp.style.borderColor='#f43f5e';
+        setTimeout(()=>{inp.style.borderColor='';err.textContent='';},2000);
+      }
+    });
+  });
+})();
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f172a;--card:#1e293b;--card2:#263347;--border:#334155;
+  --text:#e2e8f0;--muted:#94a3b8;--accent:#6366f1;
+  --c25:#64748b;--c26:#6366f1;
+  --green:#10b981;--red:#f43f5e;--amber:#f59e0b;--sky:#38bdf8;
+  --suc0:#3b82f6;--suc1:#8b5cf6;--suc2:#10b981;--suc3:#f59e0b;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,#1e1b4b,#0f172a);padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.logo span{color:var(--accent)}
+.badge{background:var(--card2);border:1px solid var(--border);padding:4px 12px;border-radius:20px;font-size:12px;color:var(--muted)}
+.period{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:18px 28px;background:var(--card);border-bottom:1px solid var(--border)}
+.kpi{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.kpi .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.kpi .val{font-size:20px;font-weight:700;color:#fff;line-height:1}
+.kpi .delta{font-size:11px;margin-top:5px}
+.up{color:var(--green)}.dn{color:var(--red)}.neu{color:var(--muted)}
+
+/* ── MONTH FILTER ── */
+.month-bar{padding:10px 28px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.month-bar .lbl-sm{font-size:11px;color:var(--muted);margin-right:4px}
+.fb{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:16px;font-size:12px;cursor:pointer;transition:.15s}
+.fb:hover{border-color:var(--accent);color:#fff}
+.fb.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;padding:0 28px;background:var(--card);border-bottom:1px solid var(--border)}
+.tab{padding:12px 22px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.tab:hover{color:#fff}
+.tab.active{color:#fff;border-bottom-color:var(--accent)}
+
+/* ── CONTENT ── */
+.content{padding:20px 28px;display:none}
+.content.active{display:block}
+
+/* ── GRID ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.card-title .note{font-size:10px;color:var(--muted);font-weight:400;text-transform:none}
+canvas{max-height:260px}
+
+/* ── SUC CARDS ── */
+.suc-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.suc-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;border-top:3px solid var(--suc0)}
+.suc-card.s1{border-top-color:var(--suc0)}
+.suc-card.s2{border-top-color:var(--suc1)}
+.suc-card.s3{border-top-color:var(--suc2)}
+.suc-card.s4{border-top-color:var(--suc3)}
+.suc-card .sname{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.suc-card .sval{font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.suc-card .svs{font-size:11px;color:var(--muted)}
+
+/* ── VENDOR SECTION ── */
+.vtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.vtab{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:16px;font-size:12px;cursor:pointer;transition:.15s}
+.vtab:hover{color:#fff;border-color:var(--accent)}
+.vtab.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* ── YEAR TOGGLE ── */
+.yr-toggle{display:flex;gap:6px;margin-bottom:12px}
+.yr-btn{background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:4px 14px;border-radius:16px;font-size:12px;cursor:pointer;transition:.15s}
+.yr-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:8px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+.tbl td{padding:7px 10px;border-bottom:1px solid rgba(51,65,85,.5);color:var(--text)}
+.tbl tr:hover td{background:rgba(99,102,241,.06)}
+.rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;background:var(--card2);color:var(--muted)}
+.rank.r1{background:#854d0e;color:#fde68a}
+.rank.r2{background:#374151;color:#d1d5db}
+.rank.r3{background:#431407;color:#fdba74}
+
+/* ── VENDOR DETAIL ── */
+.vd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mini-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.mini-kpi{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.mini-kpi .ml{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.mini-kpi .mv{font-size:16px;font-weight:700;color:#fff}
+
+/* ── PROGRESS BAR ── */
+.bar-wrap{margin-bottom:8px}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px}
+.bar-track{background:var(--card2);border-radius:4px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:.3s}
+
+/* ── CLIENT HIGHLIGHT ── */
+.chip{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;background:#1e1b4b;color:#a5b4fc;border:1px solid #3730a3}
+.chip.new{background:#052e16;color:#6ee7b7;border-color:#065f46}
+.chip.contado{background:#292524;color:#d6d3d1;border-color:#44403c}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">AutoRefricentro MYB</div>
+    <div class="gate-sub">Dashboard de Ventas · Acceso restringido</div>
+    <form id="gate-form">
+      <label for="gate-inp">Contraseña</label>
+      <input id="gate-inp" type="password" placeholder="••••••••" autocomplete="current-password">
+      <button class="gate-btn" type="submit">Ingresar</button>
+      <div class="gate-err" id="gate-err"></div>
+    </form>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="logo">AutoRefricentro MYB</div>
+    <div class="period">Dashboard de Ventas · Comparativo Ene–Jun 2025 vs 2026</div>
+  </div>
+  <div class="badge" id="date-range-badge">Datos: 1 Ene 2025 – 30 Jun 2026</div>
+</div>
+
+<!-- KPI STRIP -->
+<div class="kpi-strip">
+  <div class="kpi">
+    <div class="lbl" id="klbl25">Ventas 2025</div>
+    <div class="val" id="kv25">RD$133.1M</div>
+    <div class="delta neu" id="kdelta25">Período base</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl" id="klbl26">Ventas 2026</div>
+    <div class="val" id="kv26">RD$146.5M</div>
+    <div class="delta up" id="kgrow">▲ +10.1% vs 2025</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl" id="klbl-mes">Mejor Mes</div>
+    <div class="val" id="kv-mes">RD$35.2M</div>
+    <div class="delta neu" id="kdelta-mes">Jun 2026</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl" id="klbl-suc">Sucursal Líder</div>
+    <div class="val" style="font-size:15px" id="kv-suc">Zona Oriental</div>
+    <div class="delta up" id="kdelta-suc">▲ +48.7% YoY</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl" id="klbl-vend">Vendedor Líder</div>
+    <div class="val" style="font-size:15px" id="kv-vend">Luis Vargas</div>
+    <div class="delta up" id="kdelta-vend">RD$25.5M · ▲ +31.9%</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl" id="klbl-act">Vendedores Activos</div>
+    <div class="val" id="kv-act">8</div>
+    <div class="delta neu" id="kdelta-act">Con ventas en período</div>
+  </div>
+</div>
+
+<!-- YEAR + MONTH FILTER BAR -->
+<div class="month-bar">
+  <span class="lbl-sm">Año:</span>
+  <button class="fb" data-yr="2025" onclick="selYear(2025)">2025</button>
+  <button class="fb" data-yr="2026" onclick="selYear(2026)">2026</button>
+  <button class="fb active" data-yr="both" onclick="selYear('both')">Ambos</button>
+  <span style="width:1px;height:20px;background:var(--border);margin:0 6px;display:inline-block"></span>
+  <span class="lbl-sm">Mes:</span>
+  <span id="month-btns-container"></span>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab(0)">📊 Resumen</div>
+  <div class="tab" onclick="showTab(1)">🏪 Sucursales</div>
+  <div class="tab" onclick="showTab(2)">👥 Vendedores</div>
+  <div class="tab" onclick="showTab(3)">🏆 Top Clientes</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 0 — RESUMEN -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="content active" id="tab0">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Ventas Mensuales — 2025 vs 2026</div>
+      <canvas id="chartMensual"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Acumulado Anual (Ene–Jun)</div>
+      <canvas id="chartAcum"></canvas>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Crecimiento Mensual 2026 vs 2025</div>
+      <canvas id="chartGrow"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Participación por Mes <span class="note">% del total Ene–Jun</span></div>
+      <canvas id="chartPie"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 1 — SUCURSALES -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="content" id="tab1">
+  <div id="sucCards2026wrap"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;padding:0 2px 6px" id="sucRowLabel26"></div><div class="suc-cards" id="sucCards26"></div></div>
+  <div id="sucCards2025wrap" style="margin-top:10px"><div style="font-size:10px;font-weight:700;color:var(--c25b);text-transform:uppercase;letter-spacing:.8px;padding:0 2px 6px" id="sucRowLabel25"></div><div class="suc-cards" id="sucCards25"></div></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Ventas por Sucursal — Mensual 2026
+        <span class="note">Sin sucursal = ventas no asignadas (solo Ene 2025)</span>
+      </div>
+      <canvas id="chartSucMensual"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Comparativo 2025 vs 2026 por Sucursal</div>
+      <canvas id="chartSucComp"></canvas>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Evolución Mensual por Sucursal — 2026</div>
+      <canvas id="chartSucLine"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Participación por Sucursal 2026</div>
+      <canvas id="chartSucPie"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 2 — VENDEDORES -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="content" id="tab2">
+  <div class="yr-toggle">
+    <span style="font-size:12px;color:var(--muted);margin-right:4px;line-height:28px">Ver año:</span>
+    <button class="yr-btn active" id="vyr25btn" onclick="setVendYr(2025)">2025</button>
+    <button class="yr-btn" id="vyr26btn" onclick="setVendYr(2026)">2026</button>
+  </div>
+  <div class="grid2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">Ranking Vendedores <span id="vrankTitle">2025</span></div>
+      <canvas id="chartVendRank" style="max-height:300px"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Evolución Mensual — <span id="vtrendTitle">2025</span></div>
+      <canvas id="chartVendTrend" style="max-height:300px"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Detalle por Vendedor</div>
+    <div class="vtabs" id="vtabs"></div>
+    <div id="vend-detail"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- TAB 3 — TOP CLIENTES -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="content" id="tab3">
+  <div class="grid2" id="clGrid">
+    <div class="card" id="clCard25">
+      <div class="card-title" id="clTitle25">Top 20 Clientes — 2025 <span class="note" id="clNote25">Ene–Jun</span></div>
+      <div id="cl25table"></div>
+    </div>
+    <div class="card" id="clCard26">
+      <div class="card-title" id="clTitle26">Top 20 Clientes — 2026 <span class="note" id="clNote26">Ene–Jun</span></div>
+      <div id="cl26table"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="clCompTitle">Top Clientes — Barra Comparativa <span class="note">Excl. "Cliente de Contado"</span></div>
+    <canvas id="chartClComp" style="max-height:350px"></canvas>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  DATA (inyectado automáticamente por update_dashboard.py)
+// ══════════════════════════════════════════════════════════════
+
+// ==DATA-START==
+const MN = ["Ene","Feb","Mar","Abr","May","Jun"];
+const DATE_RANGE = "Datos: 1 Ene 2025 – 30 Jun 2026";
+const MONTHLY = {
+  2025: [20784174,15832972,19547728,19955162,29187615,27806224],
+  2026: [17283410,18592013,21081796,23966278,30356496,35211819]
+};
+
+const SUCS = [
+  { name:'Tienda Principal-SD', short:'T. Principal', cls:'s1', color:'var(--suc0)',
+    m25:[2697886,10819447,12422026,12918573,19911703,17138520],
+    m26:[10715917,11558913,12975471,14219390,17957561,20093084] },
+  { name:'Sucursal Santiago', short:'Santiago', cls:'s2', color:'var(--suc1)',
+    m25:[913757,1788683,3450609,3321296,4608906,6098827],
+    m26:[2986085,3349177,3602651,4984709,6112028,8140285] },
+  { name:'Sucursal Zona Oriental-SD', short:'Zona Oriental', cls:'s3', color:'var(--suc2)',
+    m25:[257842,3159699,3675093,3715293,4667006,4568877],
+    m26:[3581408,3683923,4503674,4762179,6286908,6978450] },
+  { name:'Sin Sucursal/Campo', short:'Sin Sucursal', cls:'s4', color:'var(--suc3)',
+    m25:[16914689,65143,0,0,0,0],
+    m26:[0,0,0,0,0,0] }
+];
+
+// Short name mapping
+function sn(n){
+  const map={
+    'MIRBEL ERNESTO UREÑA HERNANDEZ':'Mirbel Ureña',
+    'LUIS R VARGAS SANCHEZ':'Luis Vargas',
+    'VICTOR MANUEL DOMINGUEZ':'Víctor Dominguez',
+    'SIN ASIGNAR':'Sin Asignar*',
+    'FRANKELY DE JESUS RIVAS VARGAS':'Frankely Rivas',
+    'JOAN ANDRES':'Joan Andres',
+    'GREGORIS DANIEL':'Gregoris Daniel',
+    'YUNE DOMINGO DE LOS SANTOS QUEZADA':'Yune Quezada',
+    'VICTOR MANUEL ELEUTERIO NUÑEZ':'Víctor Eleuterio',
+    'OFICINA':'Oficina*',
+    'ANGEL LUIS SANCHEZ VARGAS':'Ángel Sánchez'
+  };
+  return map[n] || n.split(' ').slice(0,2).join(' ');
+}
+
+const VENDORS = {
+  2025: [
+    {n:'MIRBEL ERNESTO UREÑA HERNANDEZ',t:19520988,f:1698,m:[1966,2477737,3876441,3661167,5010674,4493004],
+     cl:[['CLIENTE DE CONTADO',6920648],['REFRIGERACION GABY SRL',854079],['CARLOS AUTO AIRE',806567],['MECAIRE SRL',569898],['AUTO REPUESTO LARA HERRERA SRL',563923],['EDIXON REFRI CAR SRL',424131],['AUTO AIRE TROPICAL ICE SRL',397289],['CARIBE TOURS CXA',337261],['TAPIA',300000],['FRIGOCENTER SRL',280000]]},
+    {n:'LUIS R VARGAS SANCHEZ',t:19304087,f:1363,m:[0,3079250,913366,3728681,6639112,4943677],
+     cl:[['CLIENTE DE CONTADO',4299931],['GLOBAL REFRIAUTO SRL',995730],['SANDY RAFAEL HOLGUIN ROSARIO',792369],['AUTOKLIMA SRL',609509],['REFRI-ABREU',488869],['NEW YORK AUTO AIRE / RAYNIEL GENAO',420000],['JOSUE AUTO AIRE',380000],['AUTO AIRE MARTIN JIMENEZ SRL',350000],['AUTOKLIMA DORMACHEZ (ABELITO)',320000],['MECAIRE SRL',290000]]},
+    {n:'VICTOR MANUEL DOMINGUEZ',t:17947259,f:1425,m:[0,2651177,3432479,3176593,4488744,4198266],
+     cl:[['CLIENTE DE CONTADO',5805931],['F & J AUTO AIRE EIRL',1062308],['REFRITECNICA JUNIOR SRL',516841],['AUTOKLIMA DORMACHEZ (ABELITO)',515505],['TECNI AIRE DAVID SRL',459836],['AUTO AIRE LUGO',390000],['VV AUTOS SAS',350000],['AUTO AIRE NUNEZ S A',320000],['JOSUE AUTO AIRE',290000],['REFRIGERACION GABY SRL',260000]]},
+    {n:'SIN ASIGNAR',t:16979832,f:1510,m:[16914689,65143,0,0,0,0],
+     cl:[['CLIENTE DE CONTADO',7984110],['NELSON RAFAEL ESPINAL TEJADA',431206],['JUAN MANUEL PATRICIO MEJIA',356210],['AUTO AIRE EL PLEY EIRL',322073],['REFRIGERACION GABY SRL',311149],['AUTO AIRE TROPICAL ICE SRL',280000],['CARIBE TOURS CXA',250000],['MECAIRE SRL',220000],['F & J AUTO AIRE EIRL',190000],['YUNE',170000]]},
+    {n:'FRANKELY DE JESUS RIVAS VARGAS',t:16283993,f:1350,m:[901304,1788683,2702904,2497788,3600517,4792797],
+     cl:[['CLIENTE DE CONTADO',5195412],['ELIVAN OLIVO MINAYA',2364653],['TECNOFRIO BODDEN SRL',1425437],['REFRI ORKIS',722161],['NEW YORK AUTO AIRE / RAYNIEL GENAO',671178],['AUTO AIRE LUIS GIL SRL',550000],['RAUL EDUVIGIS GRULLON BATISTA',400000],['JEYSSON GOMEZ RAMIREZ (NOVO AIR SERVICE)',350000],['MALESPIN CONSTRUCTORA',300000],['CARIBE TOURS CXA',260000]]},
+    {n:'JOAN ANDRES',t:15494484,f:1232,m:[33686,1839760,4052217,2292075,3773172,3503573],
+     cl:[['CLIENTE DE CONTADO',2735368],['JUAN MANUEL PATRICIO MEJIA',1138823],['AUTO AIRE NUNEZ S A',1040922],['MALESPIN CONSTRUCTORA',615128],['MARITIMA DOMINICANA, S.A.',464448],['CARIBE TOURS CXA',400000],['AUTO AIRE EL PLEY EIRL',380000],['VV AUTOS SAS',340000],['MECAIRE SRL',310000],['REFRITECNICA JUNIOR SRL',280000]]},
+    {n:'GREGORIS DANIEL',t:12734623,f:1228,m:[252453,2052483,2245142,2709870,2934388,2540287],
+     cl:[['TAPIA',544030],['JUNIOR AUTO AIRE SABANA',390135],['AUTO AIRE ROSARIO SAN ISIDRO (INOE)',332914],['RAUL EDUVIGIS GRULLON BATISTA',328530],['GESTORA DE RESPUESTO AUTO AIRE JULIO CEDENO SRL',306917],['KELVIN',280000],['ROBERTO ISABEL DECENA',260000],['AUTO AIRE L&M',240000],['MECAIRE SRL',210000],['FRIGOCENTER SRL',190000]]},
+    {n:'YUNE DOMINGO DE LOS SANTOS QUEZADA',t:7303569,f:938,m:[5389,1101597,1429951,1005423,1732618,2028590],
+     cl:[['AUTO AIRE EL PLEY EIRL',1556434],['CLIENTE DE CONTADO',708559],['ROBERTO ISABEL DECENA',524343],['MANOLO THERMOKING SRL',236702],['TRANSPORTE NARAPA SRL',132292],['AUTO AIRE MARTIN JIMENEZ SRL',120000],['FRIGOCENTER SRL',110000],['MECAIRE SRL',100000],['AUTOKLIMA SRL',90000],['AUTO AIRE EL PLEY II',80000]]},
+    {n:'VICTOR MANUEL ELEUTERIO NUÑEZ',t:3897164,f:748,m:[12453,0,746785,823508,1008389,1306030],
+     cl:[['CLIENTE DE CONTADO',2830636],['ELIVAN OLIVO MINAYA',150548],['EDIXON REFRI CAR SRL',93021],['JEYSSON GOMEZ RAMIREZ (NOVO AIR SERVICE)',48211],['AUTO AIRE RODRIGUEZ LORA, S.R.L.',46082],['TECNOFRIO BODDEN SRL',40000],['REFRI ORKIS',35000],['NEW YORK AUTO AIRE / RAYNIEL GENAO',30000],['AUTOKLIMA SRL',28000],['CARIBE TOURS CXA',25000]]},
+    {n:'OFICINA',t:3194251,f:192,m:[2558323,553937,21934,60057,0,0],
+     cl:[['JUAN MANUEL PATRICIO MEJIA',350171],['CLIENTE DE CONTADO',340356],['REFRIGERACION GABY SRL',319200],['CARIBE TOURS CXA',186441],['F & J AUTO AIRE EIRL',146493],['AUTO AIRE EL PLEY EIRL',140000],['MALESPIN CONSTRUCTORA',130000],['VV AUTOS SAS',120000],['AUTO AIRE NUNEZ S A',110000],['MECAIRE SRL',100000]]},
+  ],
+  2026: [
+    {n:'LUIS R VARGAS SANCHEZ',t:25471520,f:1811,m:[3576923,3694579,3724995,3909446,5056108,5509471],
+     cl:[['CLIENTE DE CONTADO',6119571],['CSA SOLUTIONS, S. A.',1553931],['REFRI-ABREU',975828],['GLOBAL REFRIAUTO SRL',957693],['JOSUE AUTO AIRE',648774],['SANDY RAFAEL HOLGUIN ROSARIO',600000],['AUTOKLIMA SRL',550000],['NEW YORK AUTO AIRE / RAYNIEL GENAO',480000],['AUTO AIRE MARTIN JIMENEZ SRL',420000],['MECAIRE SRL',380000]]},
+    {n:'VICTOR MANUEL DOMINGUEZ',t:24416336,f:1826,m:[2992830,2238187,4028508,4379256,4917044,5860510],
+     cl:[['CLIENTE DE CONTADO',8823424],['F & J AUTO AIRE EIRL',1738780],['TECNI AIRE DAVID SRL',917594],['AUTO AIRE LUGO',743433],['AUTOKLIMA DORMACHEZ (ABELITO)',672796],['VV AUTOS SAS',620000],['JOSUE AUTO AIRE',560000],['AUTO AIRE NUNEZ S A',480000],['REFRIGERACION GABY SRL',420000],['MECAIRE SRL',380000]]},
+    {n:'MIRBEL ERNESTO UREÑA HERNANDEZ',t:22727302,f:1939,m:[3648060,3009317,2435556,3270200,4901335,5462835],
+     cl:[['CLIENTE DE CONTADO',7854070],['CARLOS AUTO AIRE',1377153],['REFRIGERACION GABY SRL',1207606],['MECAIRE SRL',670139],['AS, MUFFLERS Y RADIADORES',437054],['EDIXON REFRI CAR SRL',420000],['AUTO AIRE TROPICAL ICE SRL',390000],['CARIBE TOURS CXA',360000],['TAPIA',320000],['FRIGOCENTER SRL',290000]]},
+    {n:'FRANKELY DE JESUS RIVAS VARGAS',t:21844326,f:1589,m:[2295974,2286887,2785599,3883298,4477688,6114879],
+     cl:[['CLIENTE DE CONTADO',6688565],['TECNOFRIO BODDEN SRL',2456224],['ELIVAN OLIVO MINAYA',1873123],['AUTO AIRE LUIS GIL SRL',858633],['REFRI ORKIS',630168],['NEW YORK AUTO AIRE / RAYNIEL GENAO',560000],['RAUL EDUVIGIS GRULLON BATISTA',500000],['JEYSSON GOMEZ RAMIREZ (NOVO AIR SERVICE)',440000],['MALESPIN CONSTRUCTORA',380000],['CARIBE TOURS CXA',320000]]},
+    {n:'GREGORIS DANIEL',t:15792840,f:1569,m:[1983550,2379667,2216386,2288829,3283629,3640780],
+     cl:[['RAUL EDUVIGIS GRULLON BATISTA',657641],['GESTORA DE RESPUESTO AUTO AIRE JULIO CEDENO SRL',524174],['AUTO AIRE L&M',313895],['TAPIA',290489],['KELVIN',270168],['JUNIOR AUTO AIRE SABANA',250000],['AUTO AIRE ROSARIO SAN ISIDRO (INOE)',230000],['ROBERTO ISABEL DECENA',210000],['MECAIRE SRL',190000],['FRIGOCENTER SRL',170000]]},
+    {n:'JOAN ANDRES',t:14814621,f:1453,m:[430625,2616830,2776692,2660488,3069718,3260268],
+     cl:[['CLIENTE DE CONTADO',3914488],['VV AUTOS SAS',764219],['JIBEZ SOLUCIONES SRL',525517],['MARITIMA DOMINICANA, S.A.',466010],['JIMENEZ BAEZ AUTO AIRE',457942],['CARIBE TOURS CXA',400000],['AUTO AIRE EL PLEY EIRL',370000],['MALESPIN CONSTRUCTORA',340000],['AUTO AIRE NUNEZ S A',310000],['MECAIRE SRL',280000]]},
+    {n:'YUNE DOMINGO DE LOS SANTOS QUEZADA',t:14003702,f:1339,m:[1597858,1304257,2287288,2473350,3003279,3337670],
+     cl:[['AUTO AIRE EL PLEY EIRL',2597284],['ROBERTO ISABEL DECENA',394464],['CLIENTE DE CONTADO',370687],['TAPIA',219481],['AUTO AIRE Y SERVICIOS CALZADO SRL',219297],['MANOLO THERMOKING SRL',200000],['TRANSPORTE NARAPA SRL',180000],['AUTO AIRE EL PLEY II',160000],['MECAIRE SRL',140000],['AUTO AIRE MARTIN JIMENEZ SRL',120000]]},
+    {n:'VICTOR MANUEL ELEUTERIO NUÑEZ',t:7330609,f:1008,m:[690110,1062289,817053,1101411,1634340,2025406],
+     cl:[['CLIENTE DE CONTADO',4829154],['REFRI SILVERIO',220690],['ARCADIO MODESTO ESPINAL TEJADA',161673],['ELIVAN OLIVO MINAYA',152748],['RADIADORES ARAN (ADAM)',121734],['EDIXON REFRI CAR SRL',110000],['TECNOFRIO BODDEN SRL',95000],['JEYSSON GOMEZ RAMIREZ (NOVO AIR SERVICE)',85000],['REFRI ORKIS',75000],['AUTO AIRE RODRIGUEZ LORA, S.R.L.',65000]]},
+  ]
+};
+
+const TOP_CL = {
+  2025:[['CLIENTE DE CONTADO',37052792],['ELIVAN OLIVO MINAYA',2941990],['AUTO AIRE EL PLEY EIRL',2127064],['JUAN MANUEL PATRICIO MEJIA',1862944],['TECNOFRIO BODDEN SRL',1596739],['F & J AUTO AIRE EIRL',1530310],['REFRIGERACION GABY SRL',1483928],['GLOBAL REFRIAUTO SRL',1260718],['AUTO AIRE NUNEZ S A',1044236],['CARLOS AUTO AIRE',985934],['MALESPIN CONSTRUCTORA',985128],['NELSON RAFAEL ESPINAL TEJADA',862000],['SANDY RAFAEL HOLGUIN ROSARIO',855795],['NEW YORK AUTO AIRE / RAYNIEL GENAO',845000],['REFRI ORKIS',842000],['AUTOKLIMA SRL',802000],['CARIBE TOURS CXA',777000],['EDIXON REFRI CAR SRL',736000],['MECAIRE SRL',675000],['ROBERTO ISABEL DECENA',670000]],
+  2026:[['CLIENTE DE CONTADO',38664379],['AUTO AIRE EL PLEY EIRL',2747284],['TECNOFRIO BODDEN SRL',2515224],['ELIVAN OLIVO MINAYA',2051871],['F & J AUTO AIRE EIRL',1879780],['CSA SOLUTIONS, S. A.',1553931],['CARLOS AUTO AIRE',1423153],['REFRIGERACION GABY SRL',1239606],['REFRI-ABREU',984000],['GLOBAL REFRIAUTO SRL',970000],['TECNI AIRE DAVID SRL',938000],['AUTO AIRE LUIS GIL SRL',899000],['AUTO AIRE LUGO',839000],['MECAIRE SRL',794000],['RAUL EDUVIGIS GRULLON BATISTA',766000],['VV AUTOS SAS',765000],['AUTOKLIMA DORMACHEZ (ABELITO)',703000],['AUTO AIRE MARTIN JIMENEZ SRL',672000],['REFRI ORKIS',663000],['JOSUE AUTO AIRE',649000]]
+};
+// ==DATA-END==
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let curTab=0, curMonthIdx=-1, curYrFilter='both', vendYr=2025, curVend=0;
+// Which years are active for comparison charts
+function activeYears(){ return curYrFilter==='both'?[2025,2026]:curYrFilter===2025?[2025]:[2026]; }
+
+// ══════════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════════
+function fmt(v){
+  const m=v/1e6;
+  if(m>=100) return 'RD$'+Math.round(m).toLocaleString('es')+'M';
+  if(m>=10)  return 'RD$'+m.toFixed(1)+'M';
+  if(m>=1)   return 'RD$'+m.toFixed(2)+'M';
+  return 'RD$'+(v/1000).toFixed(0)+'K';
+}
+function pct(a,b){ return b?((a-b)/b*100):null; }
+function pctStr(a,b){
+  const p=pct(a,b);
+  if(p===null) return '—';
+  const s=p>=0?'▲ +':'▼ ';
+  return s+Math.abs(p).toFixed(1)+'%';
+}
+function pctClass(a,b){ return pct(a,b)>=0?'up':'dn'; }
+
+function monthFilter(arr){ return curMonthIdx===-1?arr:[arr[curMonthIdx]]; }
+function monthLabels(){ return curMonthIdx===-1?MN:[MN[curMonthIdx]]; }
+function totalFiltered(yr){ return curMonthIdx===-1?MONTHLY[yr].reduce((s,v)=>s+v,0):MONTHLY[yr][curMonthIdx]; }
+
+const COLORS={
+  c25:'rgba(100,116,139,0.75)',c26:'rgba(99,102,241,0.85)',
+  c25b:'#475569',c26b:'#4f46e5',
+  suc:['rgba(59,130,246,.75)','rgba(139,92,246,.75)','rgba(16,185,129,.75)','rgba(245,158,11,.65)'],
+  sucBorder:['#3b82f6','#8b5cf6','#10b981','#f59e0b'],
+  vends:['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316']
+};
+
+// ══════════════════════════════════════════════════════════════
+//  CHART INSTANCES
+// ══════════════════════════════════════════════════════════════
+let charts={};
+function mkChart(id,cfg){
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id).getContext('2d'),cfg);
+  return charts[id];
+}
+Chart.defaults.color='#94a3b8';
+Chart.defaults.borderColor='rgba(51,65,85,.5)';
+
+// ══════════════════════════════════════════════════════════════
+//  TAB NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function showTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.content').forEach((c,j)=>c.classList.toggle('active',i===j));
+  curTab=i;
+  if(i===0) renderResumen();
+  if(i===1) renderSucursales();
+  if(i===2) renderVendedores();
+  if(i===3) renderClientes();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  YEAR SELECTOR
+// ══════════════════════════════════════════════════════════════
+window.selYear=function(yr){
+  curYrFilter=yr;
+  // sync vendYr when only one year is selected
+  if(yr===2025||yr===2026) vendYr=yr;
+  document.querySelectorAll('[data-yr]').forEach(b=>{
+    const v=b.dataset.yr==='both'?'both':parseInt(b.dataset.yr)||b.dataset.yr;
+    b.classList.toggle('active',v===yr||(b.dataset.yr===String(yr)));
+    // handle 'both' string match
+    if(b.dataset.yr==='both') b.classList.toggle('active',yr==='both');
+  });
+  updateKPIStrip();
+  if(curTab===0) renderResumen();
+  if(curTab===1) renderSucursales();
+  if(curTab===2) renderVendedores();
+  if(curTab===3) renderClientes();
+};
+
+// ══════════════════════════════════════════════════════════════
+//  MONTH SELECTOR
+// ══════════════════════════════════════════════════════════════
+window.selMonth=function(m){
+  curMonthIdx=m;
+  document.querySelectorAll('[data-m]').forEach(b=>{
+    b.classList.toggle('active',parseInt(b.dataset.m)===m);
+  });
+  updateKPIStrip();
+  if(curTab===0) renderResumen();
+  if(curTab===1) renderSucursales();
+  if(curTab===2) renderVendedores();
+  if(curTab===3) renderClientes();
+};
+
+function updateKPIStrip(){
+  const yrs=activeYears();
+  const t25=totalFiltered(2025), t26=totalFiltered(2026);
+
+  // ── Cards 1 & 2: Ventas por año ──────────────────────────────
+  const lbl25=curMonthIdx===-1?'Ventas 2025':'Ventas 2025 ('+MN[curMonthIdx]+')';
+  const lbl26=curMonthIdx===-1?'Ventas 2026':'Ventas 2026 ('+MN[curMonthIdx]+')';
+  document.getElementById('klbl25').textContent=lbl25;
+  document.getElementById('klbl26').textContent=lbl26;
+  document.getElementById('kv25').textContent=yrs.includes(2025)?fmt(t25):'—';
+  document.getElementById('kv26').textContent=yrs.includes(2026)?fmt(t26):'—';
+  document.getElementById('kdelta25').textContent=yrs.includes(2025)?'Período base':'No seleccionado';
+  const growEl=document.getElementById('kgrow');
+  if(yrs.length===2&&t25>0){
+    const p=pct(t26,t25);
+    growEl.textContent=(p>=0?'▲ +':'▼ ')+Math.abs(p).toFixed(1)+'% vs 2025';
+    growEl.className='delta '+(p>=0?'up':'dn');
+  } else {
+    growEl.textContent=yrs.length===1?'Año '+yrs[0]+' seleccionado':'—';
+    growEl.className='delta neu';
+  }
+
+  // ── Card 3: Mejor Mes ─────────────────────────────────────────
+  // Determine best month from active years in selected period
+  const mainYr=yrs.includes(2026)?2026:2025;
+  if(curMonthIdx===-1){
+    // Find peak month across active years
+    let bestVal=0, bestMo=-1, bestYr=mainYr;
+    yrs.forEach(yr=>{
+      MONTHLY[yr].forEach((v,i)=>{
+        if(v>bestVal){bestVal=v;bestMo=i;bestYr=yr;}
+      });
+    });
+    document.getElementById('klbl-mes').textContent='Mejor Mes';
+    document.getElementById('kv-mes').textContent=bestMo>=0?fmt(bestVal):'—';
+    document.getElementById('kdelta-mes').textContent=bestMo>=0?MN[bestMo]+' '+bestYr:'—';
+  } else {
+    // Month is fixed — show value for main year
+    const v=MONTHLY[mainYr][curMonthIdx]||0;
+    document.getElementById('klbl-mes').textContent='Ventas '+MN[curMonthIdx];
+    document.getElementById('kv-mes').textContent=fmt(v);
+    document.getElementById('kdelta-mes').textContent=String(mainYr);
+  }
+
+  // ── Card 4: Sucursal Líder ───────────────────────────────────
+  const sucKey=mainYr===2026?'m26':'m25';
+  const compKey=mainYr===2026?'m25':'m26';
+  let bestSucVal=0, bestSuc=null;
+  SUCS.slice(0,3).forEach(s=>{
+    const v=curMonthIdx===-1
+      ?s[sucKey].reduce((a,b)=>a+b,0)
+      :(s[sucKey][curMonthIdx]||0);
+    if(v>bestSucVal){bestSucVal=v;bestSuc=s;}
+  });
+  document.getElementById('klbl-suc').textContent='Sucursal Líder '+mainYr;
+  document.getElementById('kv-suc').textContent=bestSuc?bestSuc.short:'—';
+  if(bestSuc&&yrs.length===2){
+    const compV=curMonthIdx===-1
+      ?bestSuc[compKey].reduce((a,b)=>a+b,0)
+      :(bestSuc[compKey][curMonthIdx]||0);
+    const p=compV>0?pct(bestSucVal,compV):null;
+    const dEl=document.getElementById('kdelta-suc');
+    if(p!==null){dEl.textContent=(p>=0?'▲ +':'▼ ')+Math.abs(p).toFixed(1)+'% YoY';dEl.className='delta '+(p>=0?'up':'dn');}
+    else{dEl.textContent=fmt(bestSucVal);dEl.className='delta neu';}
+  } else {
+    document.getElementById('kdelta-suc').textContent=bestSuc?fmt(bestSucVal):'—';
+    document.getElementById('kdelta-suc').className='delta neu';
+  }
+
+  // ── Card 5: Vendedor Líder ───────────────────────────────────
+  const vl=VENDORS[mainYr];
+  let bestVendVal=0, bestVend=null;
+  vl.forEach(v=>{
+    const val=curMonthIdx===-1?v.t:(v.m[curMonthIdx]||0);
+    if(val>bestVendVal){bestVendVal=val;bestVend=v;}
+  });
+  document.getElementById('klbl-vend').textContent='Vendedor Líder '+mainYr;
+  document.getElementById('kv-vend').textContent=bestVend?sn(bestVend.n):'—';
+  if(bestVend){
+    const otherYrVl=VENDORS[mainYr===2026?2025:2026];
+    const match=otherYrVl.find(x=>x.n===bestVend.n);
+    const compVal=match?(curMonthIdx===-1?match.t:(match.m[curMonthIdx]||0)):null;
+    const dEl=document.getElementById('kdelta-vend');
+    if(yrs.length===2&&compVal!==null&&compVal>0){
+      const p=pct(bestVendVal,compVal);
+      dEl.textContent=fmt(bestVendVal)+' · '+(p>=0?'▲ +':'▼ ')+Math.abs(p).toFixed(1)+'%';
+      dEl.className='delta '+(p>=0?'up':'dn');
+    } else {
+      dEl.textContent=fmt(bestVendVal); dEl.className='delta neu';
+    }
+  }
+
+  // ── Card 6: Vendedores Activos ───────────────────────────────
+  const actCount=vl.filter(v=>(curMonthIdx===-1?v.t:(v.m[curMonthIdx]||0))>0).length;
+  document.getElementById('klbl-act').textContent='Vendedores Activos '+mainYr;
+  document.getElementById('kv-act').textContent=actCount;
+  document.getElementById('kdelta-act').textContent=curMonthIdx===-1?'Ene–Jun '+mainYr:MN[curMonthIdx]+' '+mainYr;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB 0 — RESUMEN
+// ══════════════════════════════════════════════════════════════
+function renderResumen(){
+  const labs=monthLabels();
+  const yrs=activeYears();
+  const d25=monthFilter(MONTHLY[2025]);
+  const d26=monthFilter(MONTHLY[2026]);
+
+  // Grouped monthly bars — only show active years
+  const barDs=[];
+  if(yrs.includes(2025)) barDs.push({label:'2025',data:d25,backgroundColor:COLORS.c25,borderColor:COLORS.c25b,borderWidth:1.5,borderRadius:4});
+  if(yrs.includes(2026)) barDs.push({label:'2026',data:d26,backgroundColor:COLORS.c26,borderColor:COLORS.c26b,borderWidth:1.5,borderRadius:4});
+  mkChart('chartMensual',{type:'bar',data:{labels:labs,datasets:barDs},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+
+  // Cumulative line — only active years
+  const acumDs=[];
+  if(yrs.includes(2025)){const c=d25.reduce((acc,v)=>{acc.push((acc[acc.length-1]||0)+v);return acc;},[]);acumDs.push({label:'2025',data:c,borderColor:COLORS.c25b,backgroundColor:'rgba(100,116,139,.1)',fill:true,tension:.35,pointRadius:4});}
+  if(yrs.includes(2026)){const c=d26.reduce((acc,v)=>{acc.push((acc[acc.length-1]||0)+v);return acc;},[]);acumDs.push({label:'2026',data:c,borderColor:COLORS.c26b,backgroundColor:'rgba(99,102,241,.12)',fill:true,tension:.35,pointRadius:4,borderWidth:2.5});}
+  mkChart('chartAcum',{type:'line',data:{labels:labs,datasets:acumDs},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+
+  // Growth bars — only meaningful when both years active
+  if(yrs.length===2){
+    const grow=d25.map((v,i)=>d26[i]&&v?((d26[i]-v)/v*100):0);
+    mkChart('chartGrow',{type:'bar',data:{labels:labs,datasets:[
+      {label:'Crecimiento %',data:grow,backgroundColor:grow.map(g=>g>=0?'rgba(16,185,129,.75)':'rgba(244,63,94,.75)'),borderColor:grow.map(g=>g>=0?'#10b981':'#f43f5e'),borderWidth:1.5,borderRadius:4}
+    ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>pctStr(d26[c.dataIndex],d25[c.dataIndex])}}},
+    scales:{y:{ticks:{callback:v=>v.toFixed(1)+'%'},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+  } else {
+    // Single year: show monthly % distribution instead
+    const dActive=yrs[0]===2025?d25:d26;
+    const total=dActive.reduce((s,v)=>s+v,0);
+    const pcts=dActive.map(v=>total?(v/total*100).toFixed(1):0);
+    mkChart('chartGrow',{type:'bar',data:{labels:labs,datasets:[
+      {label:'% del período',data:pcts,backgroundColor:COLORS.c26,borderColor:COLORS.c26b,borderWidth:1.5,borderRadius:4}
+    ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'% · '+fmt(dActive[c.dataIndex])}}},
+    scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+  }
+
+  // Pie — active year (prefer 2026, else 2025)
+  const pieData=yrs.includes(2026)?d26:d25;
+  const pieYr=yrs.includes(2026)?2026:2025;
+  mkChart('chartPie',{type:'doughnut',data:{labels:labs.map((l,i)=>l+' ('+fmt(pieData[i])+')'),datasets:[{
+    data:pieData,backgroundColor:['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'].slice(0,labs.length),borderWidth:1.5,borderColor:'#1e293b'
+  }]},options:{responsive:true,cutout:'60%',plugins:{title:{display:true,text:'Distribución mensual '+pieYr,color:'#94a3b8',font:{size:11}},legend:{labels:{color:'#94a3b8',font:{size:11},boxWidth:12}}}}});
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB 1 — SUCURSALES
+// ══════════════════════════════════════════════════════════════
+function renderSucursales(){
+  const labs=monthLabels();
+  const yrs=activeYears();
+  const mainYr=yrs.includes(2026)?2026:2025;
+  const compYr=mainYr===2026?2025:2026;
+
+  // ── Suc cards: always two rows when both years active ──────────
+  function buildSucRow(yr, refYr){
+    return SUCS.map((s,i)=>{
+      const t=monthFilter(s['m'+String(yr).slice(2)]).reduce((a,b)=>a+b,0);
+      const tRef=refYr?monthFilter(s['m'+String(refYr).slice(2)]).reduce((a,b)=>a+b,0):null;
+      const p=tRef&&tRef>0?pct(t,tRef):null;
+      const pStr=p!==null?(p>=0?'▲ +':'▼ ')+Math.abs(p).toFixed(1)+'% vs '+refYr:'';
+      const pCls=p!==null?(p>=0?'up':'dn'):'neu';
+      return `<div class="suc-card ${s.cls}">
+        <div class="sname">${s.short}</div>
+        <div class="sval">${fmt(t)}</div>
+        ${pStr?`<div class="svs ${pCls}">${pStr}</div>`:'<div class="svs neu">Año '+yr+'</div>'}
+      </div>`;
+    }).join('');
+  }
+
+  const w26=document.getElementById('sucCards2026wrap');
+  const w25=document.getElementById('sucCards2025wrap');
+  const lbl26=document.getElementById('sucRowLabel26');
+  const lbl25=document.getElementById('sucRowLabel25');
+
+  if(yrs.length===2){
+    // Both rows visible
+    w26.style.display=''; w25.style.display='';
+    lbl26.textContent='2026';
+    lbl25.textContent='2025';
+    document.getElementById('sucCards26').innerHTML=buildSucRow(2026,2025);
+    document.getElementById('sucCards25').innerHTML=buildSucRow(2025,2026);
+  } else {
+    // Only main year row
+    w26.style.display=''; w25.style.display='none';
+    lbl26.textContent=String(mainYr);
+    document.getElementById('sucCards26').innerHTML=buildSucRow(mainYr,null);
+  }
+
+  // Stacked monthly — active year(s)
+  const stackDs=[];
+  yrs.slice().reverse().forEach((yr,ri)=>{
+    const isMain=yr===mainYr;
+    SUCS.slice(0,3).forEach((s,i)=>{
+      stackDs.push({label:(yrs.length>1?yr+' ':'')+s.short,data:monthFilter(s['m'+String(yr).slice(2)]),
+        backgroundColor:COLORS.suc[i]+(isMain?'':'55'),borderColor:COLORS.sucBorder[i],borderWidth:1.5,stack:'yr'+yr});
+    });
+  });
+  mkChart('chartSucMensual',{type:'bar',data:{labels:labs,datasets:stackDs},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{x:{stacked:true,grid:{color:'rgba(51,65,85,.3)'}},y:{stacked:true,ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}}}}});
+
+  // Comp bars by sucursal
+  const compSucDs=[];
+  if(yrs.includes(2025)) compSucDs.push({label:'2025',data:SUCS.slice(0,3).map(s=>monthFilter(s.m25).reduce((a,b)=>a+b,0)),backgroundColor:COLORS.c25,borderColor:COLORS.c25b,borderWidth:1.5,borderRadius:4});
+  if(yrs.includes(2026)) compSucDs.push({label:'2026',data:SUCS.slice(0,3).map(s=>monthFilter(s.m26).reduce((a,b)=>a+b,0)),backgroundColor:COLORS.c26,borderColor:COLORS.c26b,borderWidth:1.5,borderRadius:4});
+  mkChart('chartSucComp',{type:'bar',data:{labels:SUCS.slice(0,3).map(s=>s.short),datasets:compSucDs},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+
+  // Line evolution — active years
+  const lineDs=[];
+  yrs.forEach(yr=>{
+    SUCS.slice(0,3).forEach((s,i)=>{
+      lineDs.push({label:(yrs.length>1?yr+' ':'')+s.short,data:monthFilter(s['m'+String(yr).slice(2)]),
+        borderColor:COLORS.sucBorder[i],backgroundColor:'transparent',tension:.35,pointRadius:4,borderWidth:yr===mainYr?2.5:1.5,
+        borderDash:yr===compYr?[4,3]:[]});
+    });
+  });
+  mkChart('chartSucLine',{type:'line',data:{labels:labs,datasets:lineDs},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+
+  // Pie — main year
+  const pieData=SUCS.slice(0,3).map(s=>monthFilter(s['m'+String(mainYr).slice(2)]).reduce((a,b)=>a+b,0));
+  mkChart('chartSucPie',{type:'doughnut',data:{labels:SUCS.slice(0,3).map(s=>s.short),datasets:[{
+    data:pieData,backgroundColor:COLORS.suc.slice(0,3),borderWidth:1.5,borderColor:'#1e293b'
+  }]},options:{responsive:true,cutout:'60%',plugins:{title:{display:true,text:'Participación '+mainYr,color:'#94a3b8',font:{size:11}},legend:{labels:{color:'#94a3b8',font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.parsed)}}}}});
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB 2 — VENDEDORES
+// ══════════════════════════════════════════════════════════════
+window.setVendYr=function(yr){
+  vendYr=yr;
+  document.getElementById('vyr25btn').classList.toggle('active',yr===2025);
+  document.getElementById('vyr26btn').classList.toggle('active',yr===2026);
+  renderVendedores();
+};
+
+function renderVendedores(){
+  // Sync vendYr with global year filter when single year selected
+  const yrs=activeYears();
+  if(yrs.length===1) vendYr=yrs[0];
+  const vl=VENDORS[vendYr];
+  document.getElementById('vrankTitle').textContent=vendYr;
+  document.getElementById('vtrendTitle').textContent=vendYr;
+  const labs=monthLabels();
+
+  // Ranking horizontal bars
+  const vnames=vl.map(v=>sn(v.n));
+  const vtotals=vl.map(v=>curMonthIdx===-1?v.t:v.m[curMonthIdx]||0);
+  mkChart('chartVendRank',{type:'bar',data:{labels:vnames,datasets:[{
+    label:'Ventas',data:vtotals,backgroundColor:COLORS.vends.slice(0,vl.length),borderWidth:0,borderRadius:4
+  }]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.x)}}},
+  scales:{x:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},y:{grid:{color:'rgba(51,65,85,.3)'},ticks:{color:'#e2e8f0'}}}}});
+
+  // Trend lines all vendors
+  const lineDs=vl.slice(0,6).map((v,i)=>({
+    label:sn(v.n),data:monthFilter(v.m),borderColor:COLORS.vends[i],backgroundColor:'transparent',tension:.35,pointRadius:3,borderWidth:2
+  }));
+  mkChart('chartVendTrend',{type:'line',data:{labels:labs,datasets:lineDs},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+
+  // Vendor tabs
+  document.getElementById('vtabs').innerHTML=vl.map((v,i)=>
+    `<button class="vtab${i===curVend?' active':''}" onclick="window.selVend(${i})">${sn(v.n)}</button>`
+  ).join('');
+  renderVendDetail();
+}
+
+window.selVend=function(i){
+  curVend=i;
+  document.querySelectorAll('.vtab').forEach((b,j)=>b.classList.toggle('active',j===i));
+  renderVendDetail();
+};
+
+function renderVendDetail(){
+  const vl=VENDORS[vendYr];
+  const v=vl[curVend]||vl[0];
+  const totalAll=vl.reduce((s,x)=>s+x.t,0);
+  const share=(v.t/totalAll*100).toFixed(1);
+  // Compare with other year
+  const otherYr=vendYr===2025?2026:2025;
+  const vOther=VENDORS[otherYr].find(x=>x.n===v.n);
+  const pStr=vOther?pctStr(v.t,vOther.t):'—';
+  const pCls=vOther?pctClass(v.t,vOther.t):'neu';
+
+  document.getElementById('vend-detail').innerHTML=`
+    <div class="mini-kpis">
+      <div class="mini-kpi"><div class="ml">Ventas ${vendYr}</div><div class="mv">${fmt(v.t)}</div></div>
+      <div class="mini-kpi"><div class="ml">Facturas</div><div class="mv">${v.f.toLocaleString('es')}</div></div>
+      <div class="mini-kpi"><div class="ml">Ticket prom.</div><div class="mv">${fmt(v.t/v.f)}</div></div>
+      <div class="mini-kpi"><div class="ml">Part. del total</div><div class="mv">${share}%</div></div>
+    </div>
+    <div class="vd-grid">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Top Clientes ${vendYr}</div>
+        <table class="tbl">
+          <thead><tr><th>#</th><th>Cliente</th><th>Total</th><th>% ventas vend.</th></tr></thead>
+          <tbody>
+            ${v.cl.slice(0,10).map((c,i)=>{
+              const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
+              const cp=v.t?(c[1]/v.t*100).toFixed(1):'—';
+              const badge=c[0]==='CLIENTE DE CONTADO'?'<span class="chip contado">Mostrador</span>':'';
+              return `<tr><td><span class="rank ${rc}">${i+1}</span></td><td>${c[0]} ${badge}</td><td style="color:#93c5fd">${fmt(c[1])}</td><td style="color:var(--muted)">${cp}%</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Evolución Mensual ${vendYr}</div>
+        <canvas id="chartVendMonthDetail" style="max-height:220px"></canvas>
+        ${vOther?`<div style="margin-top:14px;padding:12px;background:var(--card2);border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">vs ${otherYr}: <span class="${pCls}" style="font-weight:600">${pStr}</span></div>
+          <div style="font-size:12px;color:var(--muted)">${otherYr}: ${fmt(vOther.t)} · ${vOther.f} facturas</div>
+        </div>`:''}
+      </div>
+    </div>`;
+
+  mkChart('chartVendMonthDetail',{type:'bar',data:{labels:MN,datasets:[
+    {label:String(vendYr),data:v.m,backgroundColor:COLORS.c26,borderColor:COLORS.c26b,borderRadius:4,borderWidth:1.5},
+    ...(vOther?[{label:String(otherYr),data:vOther.m,backgroundColor:COLORS.c25,borderColor:COLORS.c25b,borderRadius:4,borderWidth:1.5}]:[])
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}},
+  scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},x:{grid:{color:'rgba(51,65,85,.3)'}}}}});
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB 3 — TOP CLIENTES
+// ══════════════════════════════════════════════════════════════
+// Build approximate client totals for a year+month from vendor data
+function getClientTotals(yr){
+  const vl=VENDORS[yr];
+  const map={};
+  vl.forEach(v=>{
+    const vendTotalFull=v.t||1;
+    const vendTotalPeriod=curMonthIdx===-1?v.t:(v.m[curMonthIdx]||0);
+    const ratio=vendTotalFull>0?vendTotalPeriod/vendTotalFull:0;
+    v.cl.forEach(([name,fullTotal])=>{
+      const approx=curMonthIdx===-1?fullTotal:Math.round(fullTotal*ratio);
+      if(!map[name]) map[name]=0;
+      map[name]+=approx;
+    });
+  });
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,20);
+}
+
+function renderClientes(){
+  const yrs=activeYears();
+  const periodLabel=curMonthIdx===-1?'Ene–Jun':(MN[curMonthIdx]);
+  const isApprox=curMonthIdx!==-1;
+
+  // Build data for each year
+  const cl25=getClientTotals(2025);
+  const cl26=getClientTotals(2026);
+
+  function buildTable(data, yr, refData){
+    const total=data.reduce((s,c)=>s+c[1],0);
+    return `<table class="tbl"><thead><tr><th>#</th><th>Cliente</th><th>Total</th><th>% total</th></tr></thead><tbody>
+      ${data.map((c,i)=>{
+        const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
+        const p=(c[1]/total*100).toFixed(1);
+        const isNew=yr===2026&&refData&&!refData.find(x=>x[0]===c[0]);
+        const badge=c[0]==='CLIENTE DE CONTADO'?'<span class="chip contado">Mostrador</span>'
+          :(isNew?'<span class="chip new">Nuevo ↑</span>':'');
+        return `<tr><td><span class="rank ${rc}">${i+1}</span></td>
+          <td style="max-width:220px;word-break:break-word">${c[0]} ${badge}</td>
+          <td style="color:#93c5fd;white-space:nowrap">${fmt(c[1])}</td>
+          <td style="color:var(--muted)">${p}%</td></tr>`;
+      }).join('')}
+    </tbody></table>${isApprox?'<div style="font-size:10px;color:#475569;margin-top:6px;padding:4px 8px">* Valores estimados proporcionalmente por mes</div>':''}`;
+  }
+
+  // Show/hide cards based on year filter
+  const card25=document.getElementById('clCard25');
+  const card26=document.getElementById('clCard26');
+  const grid=document.getElementById('clGrid');
+
+  if(yrs.length===2){
+    card25.style.display=''; card26.style.display='';
+    grid.style.gridTemplateColumns='1fr 1fr';
+  } else if(yrs.includes(2025)){
+    card25.style.display=''; card26.style.display='none';
+    grid.style.gridTemplateColumns='1fr';
+  } else {
+    card25.style.display='none'; card26.style.display='';
+    grid.style.gridTemplateColumns='1fr';
+  }
+
+  // Update titles
+  document.getElementById('clTitle25').innerHTML='Top 20 Clientes — 2025 <span class="note">'+periodLabel+(isApprox?' (aprox.)':'')+'</span>';
+  document.getElementById('clTitle26').innerHTML='Top 20 Clientes — 2026 <span class="note">'+periodLabel+(isApprox?' (aprox.)':'')+'</span>';
+
+  if(yrs.includes(2025)) document.getElementById('cl25table').innerHTML=buildTable(cl25,2025,cl26);
+  if(yrs.includes(2026)) document.getElementById('cl26table').innerHTML=buildTable(cl26,2026,cl25);
+
+  // Bar comparison — active years, excl. Contado
+  const excl='CLIENTE DE CONTADO';
+  const baseList=(yrs.includes(2026)?cl26:cl25).filter(c=>c[0]!==excl).slice(0,12);
+  const clNames=baseList.map(c=>c[0].length>24?c[0].slice(0,24)+'…':c[0]);
+  const barDs=[];
+  if(yrs.includes(2025)){
+    barDs.push({label:'2025',data:baseList.map(c=>{const f=cl25.find(x=>x[0]===c[0]);return f?f[1]:0;}),
+      backgroundColor:COLORS.c25,borderColor:COLORS.c25b,borderWidth:1.5,borderRadius:4});
+  }
+  if(yrs.includes(2026)){
+    barDs.push({label:'2026',data:baseList.map(c=>{const f=cl26.find(x=>x[0]===c[0]);return f?f[1]:0;}),
+      backgroundColor:COLORS.c26,borderColor:COLORS.c26b,borderWidth:1.5,borderRadius:4});
+  }
+  const compTitle=`Top Clientes — ${yrs.join(' vs ')} · ${periodLabel}${isApprox?' (aprox.)':''}`;
+  document.getElementById('clCompTitle').innerHTML=compTitle+' <span class="note">Excl. "Cliente de Contado"</span>';
+  mkChart('chartClComp',{type:'bar',data:{labels:clNames,datasets:barDs},
+    options:{indexAxis:'y',responsive:true,
+    plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.x)}}},
+    scales:{x:{ticks:{callback:v=>fmt(v)},grid:{color:'rgba(51,65,85,.5)'}},
+    y:{grid:{color:'rgba(51,65,85,.3)'},ticks:{color:'#e2e8f0',font:{size:11}}}}}});
+}
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+// Build month filter buttons dynamically from MN array
+(function buildMonthButtons(){
+  const container = document.getElementById('month-btns-container');
+  if(!container) return;
+  let html = '<button class="fb active" data-m="-1" onclick="selMonth(-1)">Todos</button>';
+  MN.forEach((label, i) => {
+    html += `<button class="fb" data-m="${i}" onclick="selMonth(${i})">${label}</button>`;
+  });
+  container.innerHTML = html;
+})();
+// Update date range badge
+(function(){
+  const el = document.getElementById('date-range-badge');
+  if(el && typeof DATE_RANGE !== 'undefined') el.textContent = DATE_RANGE;
+})();
+updateKPIStrip();
+renderResumen();
+</script>
+</body>
+</html>

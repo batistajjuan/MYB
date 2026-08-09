@@ -28,7 +28,7 @@
     if(sessionStorage.getItem('arc_auth')==='1'){gate.remove();return;}
     document.getElementById('gate-form').addEventListener('submit',function(e){
       e.preventDefault();
-      if(inp.value==='Myb2026'){
+      if(inp.value==='Myb2026!!@@!!'){
         sessionStorage.setItem('arc_auth','1');
         gate.style.opacity='0';gate.style.transition='opacity .4s';
         setTimeout(()=>gate.remove(),400);

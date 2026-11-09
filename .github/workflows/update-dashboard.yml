@@ -2,7 +2,14 @@ name: Actualizar Dashboard
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+     # Corre diariamente a las 2:00 AM UTC (10:00 PM RD)
+    - cron: '0 14 * * *'   # 10:00 AM RD
+    - cron: '0 16 * * *'   # 12:00 PM RD
+    - cron: '0 18 * * *'   #  2:00 PM RD
+    - cron: '0 19 * * *'   #  3:00 PM RD
+    - cron: '0 20 * * *'   #  4:00 PM RD
+    - cron: '0 2  * * *'   # 10:00 PM RD
+  # Permite correr manualmente desde GitHub Actions
   workflow_dispatch:
 
 jobs:
